@@ -1,0 +1,9 @@
+{
+  "name": "@/db",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"build: @/db\"",
+    "typecheck": "echo \"typecheck: @/db\""
+  }
+}

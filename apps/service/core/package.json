@@ -1,0 +1,9 @@
+{
+  "name": "@/core",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"build: @/core\"",
+    "typecheck": "echo \"typecheck: @/core\""
+  }
+}

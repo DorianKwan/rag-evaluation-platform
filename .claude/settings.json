@@ -3,7 +3,8 @@
     "allow": [
       "Bash(docker compose *)",
       "Bash(pnpm install *)",
-      "Bash(pnpm turbo *)"
+      "Bash(pnpm turbo *)",
+      "Bash(npm info *)"
     ]
   }
 }

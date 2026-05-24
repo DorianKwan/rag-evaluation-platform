@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RunStatus {
+  pending
+  running
+  success
+  failed
+  error
+}
+
+enum TestCaseStatus {
+  pending
+  running
+  success
+  failed
+  error
+}
+
+model Dataset {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  testCases   TestCase[]
+  evalRuns    EvalRun[]
+
+  @@map("dataset")
+}
+
+model TestCase {
+  id        String   @id @default(cuid())
+  datasetId String   @map("dataset_id")
+  userInput String   @map("user_input")
+  reference String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  dataset   Dataset  @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@map("test_case")
+}
+
+model EvalRun {
+  id         String    @id @default(cuid())
+  datasetId  String    @map("dataset_id")
+  status     RunStatus @default(pending)
+  webhookUrl String?   @map("webhook_url")
+
+  // Set once at creation from DatasetTestCase count — never updated.
+  // Used by workers to determine if they are the last job without a second COUNT.
+  totalCount Int @map("total_count")
+
+  // Snapshot at creation time so env changes don't affect in-flight runs.
+  passThreshold Float @default(0.7) @map("pass_threshold")
+
+  errorMessage String?   @map("error_message")
+  startedAt    DateTime? @map("started_at")
+  completedAt  DateTime? @map("completed_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  dataset   Dataset        @relation(fields: [datasetId], references: [id])
+  testCases EvalTestCase[]
+
+  @@index([datasetId])
+  @@index([status])
+  @@map("eval_run")
+}
+
+model EvalTestCase {
+  id         String         @id @default(cuid())
+  evalRunId  String         @map("eval_run_id")
+  status     TestCaseStatus @default(pending)
+  webhookUrl String?        @map("webhook_url")
+
+  // Snapshot of DatasetTestCase at EvalRun creation time.
+  // Preserved so dataset changes don't affect historical runs.
+  userInput String @map("user_input")
+  reference String
+
+  // Populated on job completion
+  modelResponse String?  @map("model_response")
+  passed        Boolean?
+  score         Float?
+  errorMessage  String?  @map("error_message")
+
+  // BullMQ retry mirroring for observability without querying Redis
+  attemptCount Int     @default(0) @map("attempt_count")
+  lastError    String? @map("last_error")
+
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  evalRun EvalRun @relation(fields: [evalRunId], references: [id])
+
+  // Supports the COUNT query workers use for last-job detection:
+  // WHERE eval_run_id = $1 AND status IN ('success', 'failed', 'error')
+  @@index([evalRunId, status])
+  @@map("eval_test_case")
+}

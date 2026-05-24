@@ -2,8 +2,26 @@
   "name": "@/db",
   "version": "0.0.0",
   "private": true,
+  "exports": {
+    ".": "./dist/index.js"
+  },
   "scripts": {
-    "build": "echo \"build: @/db\"",
-    "typecheck": "echo \"typecheck: @/db\""
+    "build": "tsc --project tsconfig.json",
+    "typecheck": "tsc --noEmit --project tsconfig.json",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.8.0",
+    "@prisma/client": "7.8.0"
+  },
+  "devDependencies": {
+    "@/config": "workspace:*",
+    "@types/node": "22.19.19",
+    "dotenv": "17.4.2",
+    "prisma": "7.8.0",
+    "typescript": "5.8.3"
   }
 }

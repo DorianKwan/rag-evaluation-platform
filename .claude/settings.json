@@ -7,7 +7,12 @@
       "Bash(npm info *)",
       "Bash(pnpm --filter @/contracts build)",
       "Bash(pnpm --filter @/contracts typecheck)",
-      "Bash(pnpm add *)"
+      "Bash(pnpm add *)",
+      "Bash(npm show *)",
+      "Bash(pnpm --filter @/db install)",
+      "Bash(pnpm --filter @/db db:generate)",
+      "Bash(pnpm --filter @/db build)",
+      "Bash(pnpm --filter @/db typecheck)"
     ]
   }
 }

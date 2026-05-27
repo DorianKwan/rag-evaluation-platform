@@ -12,7 +12,9 @@
       "Bash(pnpm --filter @/db install)",
       "Bash(pnpm --filter @/db db:generate)",
       "Bash(pnpm --filter @/db build)",
-      "Bash(pnpm --filter @/db typecheck)"
+      "Bash(pnpm --filter @/db typecheck)",
+      "Bash(uv --version)",
+      "Bash(uv run *)"
     ]
   }
 }

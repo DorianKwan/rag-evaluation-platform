@@ -27,6 +27,23 @@ services:
       timeout: 5s
       retries: 5
 
+  eval-service:
+    build:
+      context: ./apps/service/eval
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./apps/service/eval/.env
+    depends_on:
+      - postgres
+      - redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   postgres_data:
   redis_data:

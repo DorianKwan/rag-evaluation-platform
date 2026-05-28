@@ -1,7 +1,12 @@
+import asyncio
+import logging
 import math
 
-from langchain_anthropic import ChatAnthropic
-from ragas import EvaluationDataset, SingleTurnSample, evaluate
+from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
+from ragas.embeddings.base import BaseRagasEmbedding, embedding_factory
+from ragas.llms import llm_factory
+from ragas.llms.base import InstructorBaseRagasLLM
 from ragas.metrics.collections import (
     AnswerRelevancy,
     ContextPrecision,
@@ -12,26 +17,27 @@ from ragas.metrics.collections import (
 from app.config import settings
 from app.contracts import SupportedMetric
 
-# RAGAS metric → required SingleTurnSample fields:
+logger = logging.getLogger(__name__)
+
+# collections metrics use ascore() directly — not the evaluate()/EvaluationDataset pipeline.
+# ascore field requirements per metric:
 # faithfulness:      user_input, response, retrieved_contexts
-# answer_relevancy:  user_input, response
-# context_precision: user_input, retrieved_contexts, reference
-# context_recall:    retrieved_contexts, reference
-# All fields are provided for every call — RAGAS ignores extras per metric.
-
-_METRIC_KEY_MAP: dict[str, SupportedMetric] = {
-    "faithfulness": SupportedMetric.faithfulness,
-    "answer_relevancy": SupportedMetric.answer_relevancy,
-    "context_precision": SupportedMetric.context_precision,
-    "context_recall": SupportedMetric.context_recall,
-}
+# answer_relevancy:  user_input, response        (scores against user_input, NOT reference)
+# context_precision: user_input, reference, retrieved_contexts
+# context_recall:    user_input, retrieved_contexts, reference
 
 
-def _get_llm() -> ChatAnthropic:
-    return ChatAnthropic(
-        model=settings.ragas_judge_model,
-        api_key=settings.anthropic_api_key,
-    )
+def _get_llm() -> InstructorBaseRagasLLM:
+    client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+    llm = llm_factory(settings.ragas_judge_model, provider="anthropic", client=client)
+    # RAGAS sends both temperature and top_p by default; Anthropic rejects requests with both set.
+    llm.model_args.pop("top_p", None)  # type: ignore[attr-defined]
+    return llm
+
+
+def _get_embeddings() -> BaseRagasEmbedding:
+    client = AsyncOpenAI(api_key=settings.openai_api_key)
+    return embedding_factory("openai", settings.ragas_embeddings_model, client=client)
 
 
 def _nan_to_none(value: float | None) -> float | None:
@@ -47,32 +53,31 @@ async def score(
     retrieved_contexts: list[str],
     reference: str,
 ) -> dict[SupportedMetric, float | None]:
-    """
-    Run all four RAGAS metrics and return scores.
-    NaN results → None. Metric failures → None (logged, not raised).
-    """
     llm = _get_llm()
-    metrics = [
-        Faithfulness(llm=llm),
-        AnswerRelevancy(llm=llm),
-        ContextPrecision(llm=llm),
-        ContextRecall(llm=llm),
-    ]
-    sample = SingleTurnSample(
-        user_input=user_input,
-        response=answer,
-        retrieved_contexts=retrieved_contexts,
-        reference=reference,
+    embeddings = _get_embeddings()
+
+    faithfulness = Faithfulness(llm=llm)
+    answer_relevancy = AnswerRelevancy(llm=llm, embeddings=embeddings)
+    context_precision = ContextPrecision(llm=llm)
+    context_recall = ContextRecall(llm=llm)
+
+    results = await asyncio.gather(
+        faithfulness.ascore(user_input=user_input, response=answer, retrieved_contexts=retrieved_contexts),
+        answer_relevancy.ascore(user_input=user_input, response=answer),
+        context_precision.ascore(user_input=user_input, reference=reference, retrieved_contexts=retrieved_contexts),
+        context_recall.ascore(user_input=user_input, retrieved_contexts=retrieved_contexts, reference=reference),
+        return_exceptions=True,
     )
-    dataset = EvaluationDataset(samples=[sample])
 
-    result = await evaluate(dataset=dataset, metrics=metrics)
-
+    raw_scores = zip(
+        [SupportedMetric.faithfulness, SupportedMetric.answer_relevancy, SupportedMetric.context_precision, SupportedMetric.context_recall],
+        results,
+    )
     scores: dict[SupportedMetric, float | None] = {}
-    result_dict = result.to_pandas().iloc[0].to_dict()
-
-    for ragas_key, metric_enum in _METRIC_KEY_MAP.items():
-        raw = result_dict.get(ragas_key)
-        scores[metric_enum] = _nan_to_none(float(raw) if raw is not None else None)
-
+    for metric, r in raw_scores:
+        if isinstance(r, BaseException):
+            logger.warning("Metric %s failed: %s: %s", metric.value, type(r).__name__, r)
+            scores[metric] = None
+        else:
+            scores[metric] = _nan_to_none(float(r.value))
     return scores

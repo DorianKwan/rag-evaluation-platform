@@ -36,13 +36,15 @@ cp .env.example .env
 
 Fill in the required values in `.env`:
 
-| Variable               | Required | Default            | Description                                            |
-| ---------------------- | -------- | ------------------ | ------------------------------------------------------ |
-| `ANTHROPIC_API_KEY`    | yes      | —                  | Anthropic API key for RAGAS judge LLM                  |
-| `RAG_BOT_BASE_URL`     | yes      | —                  | Base URL of the RAG bot (e.g. `http://localhost:3000`) |
-| `RAG_BOT_API_KEY`      | yes      | —                  | Sent as `x-eval-api-key` header to the RAG bot         |
-| `RAGAS_JUDGE_MODEL`    | no       | `claude-haiku-4-5` | Claude model used as RAGAS judge                       |
-| `EVAL_TIMEOUT_SECONDS` | no       | `120`              | Total timeout for RAG call + scoring                   |
+| Variable                 | Required | Default                    | Description                                                   |
+| ------------------------ | -------- | -------------------------- | ------------------------------------------------------------- |
+| `ANTHROPIC_API_KEY`      | yes      | —                          | Anthropic API key — used as the RAGAS judge LLM               |
+| `OPENAI_API_KEY`         | yes      | —                          | OpenAI API key — used for `AnswerRelevancy` embeddings only   |
+| `RAG_BOT_BASE_URL`       | yes      | —                          | Base URL of the RAG bot.                                      |
+| `RAG_BOT_API_KEY`        | yes      | —                          | Sent as `x-eval-api-key` header to the RAG bot                |
+| `RAGAS_JUDGE_MODEL`      | no       | `claude-haiku-4-5`         | Claude model used as RAGAS judge LLM                          |
+| `RAGAS_EMBEDDINGS_MODEL` | no       | `text-embedding-3-small`   | OpenAI embeddings model used for `AnswerRelevancy`            |
+| `EVAL_TIMEOUT_SECONDS`   | no       | `120`                      | Total timeout for RAG call + scoring                          |
 
 ### 4. Verify config loads
 
@@ -50,7 +52,7 @@ Fill in the required values in `.env`:
 uv run python -c "from app.config import settings; print(settings.model_dump())"
 ```
 
-Should print all five fields without error.
+Should print all fields without error.
 
 ### 5. Start the dev server
 

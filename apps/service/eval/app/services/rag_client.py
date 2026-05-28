@@ -1,5 +1,6 @@
 import httpx
 from fastapi import HTTPException
+
 from app.config import settings
 from app.contracts import RagBotResponse
 
@@ -26,7 +27,9 @@ async def fetch_rag_response(user_input: str) -> RagBotResponse:
     except httpx.HTTPStatusError as e:
         raise HTTPException(
             status_code=502,
-            detail=f"RAG bot returned {e.response.status_code}: {e.response.text[:200]}",
+            detail=(
+                f"RAG bot returned {e.response.status_code}: {e.response.text[:200]}"
+            ),
         ) from e
     except httpx.RequestError as e:
         raise HTTPException(

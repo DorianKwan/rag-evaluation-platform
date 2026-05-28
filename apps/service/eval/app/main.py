@@ -1,8 +1,18 @@
+import logging
 from contextlib import asynccontextmanager
+
 import httpx
 from fastapi import FastAPI
+
 import app.services.rag_client as rag_client
+from app.config import settings
 from app.routes import evaluate, health
+
+logging.basicConfig(
+    level=getattr(logging, settings.log_level.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)-8s %(name)s %(message)s",
+    force=True,
+)
 
 
 @asynccontextmanager

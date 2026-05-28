@@ -4,6 +4,9 @@
   "private": true,
   "scripts": {
     "build": "echo \"build: @/eval (uv)\"",
-    "typecheck": "echo \"typecheck: @/eval\""
+    "typecheck": "echo \"typecheck: @/eval\"",
+    "test": "uv run pytest",
+    "lint": "uv run ruff check .",
+    "format": "uv run ruff format ."
   }
 }

@@ -1,10 +1,11 @@
 from __future__ import annotations
-from enum import Enum
-from typing import Optional
+
+from enum import StrEnum
+
 from pydantic import BaseModel, Field
 
 
-class SupportedMetric(str, Enum):
+class SupportedMetric(StrEnum):
     faithfulness = "faithfulness"
     answer_relevancy = "answer_relevancy"
     context_precision = "context_precision"
@@ -14,12 +15,12 @@ class SupportedMetric(str, Enum):
 class EvaluateRequest(BaseModel):
     user_input: str = Field(..., min_length=1)
     reference: str = Field(..., min_length=1)
-    trace_id: Optional[str] = None
+    trace_id: str | None = None
 
 
 class EvaluateResponse(BaseModel):
     trace_id: str
-    scores: dict[SupportedMetric, Optional[float]]
+    scores: dict[SupportedMetric, float | None]
 
 
 class HealthResponse(BaseModel):

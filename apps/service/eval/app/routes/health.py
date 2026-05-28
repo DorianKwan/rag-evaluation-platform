@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from app.contracts import HealthResponse
 
 router = APIRouter()

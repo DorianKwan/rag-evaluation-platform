@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     rag_bot_base_url: str
     rag_bot_api_key: str
     eval_timeout_seconds: int = 120
+    log_level: str = "INFO"
 
 
 settings = Settings()

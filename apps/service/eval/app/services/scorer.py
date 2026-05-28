@@ -1,12 +1,14 @@
 import math
+
+from langchain_anthropic import ChatAnthropic
 from ragas import EvaluationDataset, SingleTurnSample, evaluate
 from ragas.metrics.collections import (
-    Faithfulness,
     AnswerRelevancy,
     ContextPrecision,
     ContextRecall,
+    Faithfulness,
 )
-from langchain_anthropic import ChatAnthropic
+
 from app.config import settings
 from app.contracts import SupportedMetric
 

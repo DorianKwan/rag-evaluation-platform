@@ -1,11 +1,13 @@
 import asyncio
-import uuid
 import logging
+import uuid
+
 from fastapi import APIRouter, HTTPException
+
+from app.config import settings
 from app.contracts import EvaluateRequest, EvaluateResponse
 from app.services.rag_client import fetch_rag_response
 from app.services.scorer import score
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -35,5 +37,5 @@ async def evaluate_endpoint(request: EvaluateRequest) -> EvaluateResponse:
             _run_evaluation(request),
             timeout=settings.eval_timeout_seconds,
         )
-    except asyncio.TimeoutError:
+    except TimeoutError:
         raise HTTPException(status_code=504, detail="Evaluation timed out")
